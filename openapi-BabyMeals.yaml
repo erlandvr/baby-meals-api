@@ -10,6 +10,8 @@ info:
       • Daily intake (what has already been consumed)
 servers:
   - url: /v1
+security:
+  - bearerAuth: []
 tags:
   - name: Children
     description: Manage child profiles
