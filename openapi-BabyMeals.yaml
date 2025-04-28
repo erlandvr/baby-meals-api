@@ -8,6 +8,9 @@ info:
       • Child profile (age, weight, allergies, dietary style, taste preferences)
       • Current context (time-of-day)
       • Daily intake (what has already been consumed)
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 servers:
   - url: /v1
 security:
