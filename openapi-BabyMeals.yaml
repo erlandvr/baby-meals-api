@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: Baby‑Meals API
+  version: 1.0.0
+  description: |
+    A RESTful service that stores a child’s food intake and recommends the next
+    nutritionally balanced meal or snack by combining:
+      • Child profile (age, weight, allergies, dietary style, taste preferences)
+      • Current context (time-of-day)
+      • Daily intake (what has already been consumed)
+servers:
+  - url: /v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Children
+    description: Manage child profiles
+  - name: Intakes
+    description: Record and view food intake
+  - name: Suggestions
+    description: Nutritional meal suggestions
+paths:
+  /children:
+    post:
+      tags: [Children]
+      summary: Create child profile
+      operationId: createChild
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChildInput"
+      responses:
+        "201":
+          $ref: "#/components/responses/ChildCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /children/{childId}:
+    parameters:
+      - $ref: "#/components/parameters/childId"
+    get:
+      tags: [Children]
+      summary: Get child profile
+      operationId: getChild
+      responses:
+        "200":
+          $ref: "#/components/responses/ChildOK"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Children]
+      summary: Update child profile
+      operationId: updateChild
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChildUpdate"
+      responses:
+        "200":
+          $ref: "#/components/responses/ChildOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Children]
+      summary: Delete child profile
+      operationId: deleteChild
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /children/{childId}/intakes:
+    parameters:
+      - $ref: "#/components/parameters/childId"
+    post:
+      tags: [Intakes]
+      summary: Record intake
+      operationId: addIntake
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntakeInput"
+      responses:
+        "201":
+          description: Intake logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntakeItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    get:
+      tags: [Intakes]
+      summary: List intakes
+      operationId: listIntakes
+      parameters:
+        - name: date
+          in: query
+          description: Date filter (YYYY-MM-DD). Defaults to today.
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IntakeItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /children/{childId}/suggestions:
+    parameters:
+      - $ref: "#/components/parameters/childId"
+    get:
+      tags: [Suggestions]
+      summary: Get meal suggestions
+      operationId: getSuggestions
+      parameters:
+        - name: datetime
+          in: query
+          description: RFC3339 datetime of intended meal. Defaults to now.
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SuggestionItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    childId:
+      name: childId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    ChildCreated:
+      description: Child created
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Child"
+    ChildOK:
+      description: Child object
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Child"
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Duplicate meal time
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unprocessable:
+      description: Nutritional rule violation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Child:
+      type: object
+      required: [id, name, dateOfBirth]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        weightKg:
+          type: number
+        allergies:
+          type: array
+          items:
+            type: string
+        dietaryStyle:
+          type: string
+          enum: [omnivore, vegetarian, vegan]
+        tastePreferences:
+          type: array
+          items:
+            type: string
+    ChildInput:
+      type: object
+      required: [name, dateOfBirth]
+      properties:
+        name:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        weightKg:
+          type: number
+        allergies:
+          type: array
+          items:
+            type: string
+        dietaryStyle:
+          type: string
+          enum: [omnivore, vegetarian, vegan]
+        tastePreferences:
+          type: array
+          items:
+            type: string
+    ChildUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        weightKg:
+          type: number
+        allergies:
+          type: array
+          items:
+            type: string
+        dietaryStyle:
+          type: string
+          enum: [omnivore, vegetarian, vegan]
+        tastePreferences:
+          type: array
+          items:
+            type: string
+    NutrientBreakdown:
+      type: object
+      required: [energyKcal, proteinG, fatG, carbsG]
+      properties:
+        energyKcal:
+          type: number
+        proteinG:
+          type: number
+        fatG:
+          type: number
+        carbsG:
+          type: number
+        ironMg:
+          type: number
+        calciumMg:
+          type: number
+    IntakeInput:
+      type: object
+      required: [timestamp, description, nutrients]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        description:
+          type: string
+        nutrients:
+          $ref: "#/components/schemas/NutrientBreakdown"
+    IntakeItem:
+      allOf:
+        - $ref: "#/components/schemas/IntakeInput"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+    SuggestionItem:
+      type: object
+      required: [name, portion, nutrients]
+      properties:
+        name:
+          type: string
+        portion:
+          type: string
+        nutrients:
+          $ref: "#/components/schemas/NutrientBreakdown"
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        code:
+          type: string
