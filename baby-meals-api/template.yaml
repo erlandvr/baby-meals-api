@@ -21,6 +21,25 @@ Resources:
         Parameters:
           Location: openapi/v1.yaml
 
+  ChildrenTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: Children
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  MealsTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: Meals
+      PrimaryKey:
+        Name: PK
+        Type: String
+
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -31,10 +50,32 @@ Resources:
         - x86_64
       Events:
         HelloWorld:
-          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: HttpApi
           Properties:
             Path: /hello
             Method: get
+
+  CreateChildFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/children/ # folder conatining create.py
+      Handler: create.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Events:
+        CreateChild:
+          Type: HttpApi
+          Properties:
+            Path: /v1/children
+            Method: post
+            ApiId: !Ref Api
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ChildrenTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ChildrenTable
 
 Outputs:
   HelloWorldApi:
